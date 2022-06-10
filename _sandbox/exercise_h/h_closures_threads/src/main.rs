@@ -106,5 +106,35 @@ fn main() {
     // On the child threads print out the values you receive. Close the sending side in the main
     // thread by calling `drop(tx)` (assuming you named your sender channel variable `tx`).  Join
     // the child threads.
+
+    let (tx_a, rx_a) = channel::unbounded(); 
+    // we have to use a new set of transmitters and receivers (1)
+
+    let rx_b = rx_a.clone();
+
+    let child_1 = thread::spawn(move || {
+        for msg in rx_a {
+            println!("child_1 received {}.", msg)
+        }
+    });
+
+    let child_2 = thread::spawn(move || {
+        for msg in rx_b {
+            println!("child_2 received {}.", msg)
+        }
+    });
+
+    // main thread
+    for i in 0..10 {
+        tx_a.send(i).unwrap(); 
+        // (1) because if not we will get a E0308, as tx expects a &str, likely due to handle_a and handle_b
+        pause_ms(30);
+    }
+
+    drop(tx_a);
+
+    child_1.join().unwrap();
+    child_2.join().unwrap();
+
     println!("Main thread: Exiting.")
 }

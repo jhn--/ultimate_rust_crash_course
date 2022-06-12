@@ -1,17 +1,67 @@
 use std::error::Error;
-use rusty_audio::Audio;
+// use rusty_audio::Audio; /* sounds */
+use std::io;
+use crossterm::terminal;
+use crossterm::ExecutableCommand;
+use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::cursor::{Show, Hide};
+use crossterm::event::{self, Event, KeyCode};
+
+use std::time::Duration;
 
 fn main() -> Result <(), Box<dyn Error>> {
-    let mut audio = Audio::new();
-    audio.add("explode", "./sounds/explode.wav");
-    audio.add("lose", "./sounds/lose.wav");
-    audio.add("move", "./sounds/move.wav");
-    audio.add("pew", "./sounds/pew.wav");
-    audio.add("startup", "./sounds/startup.wav");
-    audio.add("win", "./sounds/win.wav");
-    audio.play("startup");
+    /* sounds */
+    // let mut audio = Audio::new();
+    // audio.add("explode", "./sounds/explode.wav");
+    // audio.add("lose", "./sounds/lose.wav");
+    // audio.add("move", "./sounds/move.wav");
+    // audio.add("pew", "./sounds/pew.wav");
+    // audio.add("startup", "./sounds/startup.wav");
+    // audio.add("win", "./sounds/win.wav");
+    // audio.play("startup");
 
-    audio.wait();
+    // Terminal
+    let mut stdout = io::stdout();
+
+    // enable raw mode so we can get keyboard input as it occurs.
+    // append a `?` operator - will crash the program if we have an error.
+    terminal::enable_raw_mode()?;
+    // enter alternate screen
+    stdout.execute(EnterAlternateScreen)?; // enter alternate screen
+    stdout.execute(Hide)?; // hide cursor
+
+    // Game Loop
+    'gameloop: loop { // label the loop w the name gameloop
+        // Input
+        while event::poll(Duration::default())? {
+            // poll for input events with a default duration of 0
+            // once input events occur, don't wait, respond immediately
+            if let Event::Key(key_event) = event::read()? {
+                // what sort of events are we interested in?
+                match key_event.code {
+                    // keyboard events
+                    KeyCode::Esc | KeyCode::Char('q') => {
+                        // specifically Esc key and q key
+                        // audio.play("lose");
+                        break 'gameloop; // break out of the game loop
+                    },
+                    _ => {
+                        // ignore everything else
+                    }
+                }
+            }
+        }
+    }
+    
+    // Cleanup
+
+    /* sounds */
+    // audio.wait();
+    
+    stdout.execute(Show)?; // show cursor
+    stdout.execute(LeaveAlternateScreen)?; // leave alternate screen
+    terminal::disable_raw_mode()?; // leave raw mode
+    
     Ok(())
 }
 

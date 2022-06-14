@@ -1,6 +1,8 @@
 use std::error::Error;
 // use rusty_audio::Audio; /* sounds */
 use std::io;
+use std::sync::mpsc;
+use std::thread;
 use crossterm::terminal;
 use crossterm::ExecutableCommand;
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
@@ -8,6 +10,10 @@ use crossterm::cursor::{Show, Hide};
 use crossterm::event::{self, Event, KeyCode};
 
 use std::time::Duration;
+
+use invaders::frame;
+use invaders::frame::new_frame;
+use invaders::render;
 
 fn main() -> Result <(), Box<dyn Error>> {
     /* sounds */
@@ -30,8 +36,26 @@ fn main() -> Result <(), Box<dyn Error>> {
     stdout.execute(EnterAlternateScreen)?; // enter alternate screen
     stdout.execute(Hide)?; // hide cursor
 
+    // Render loop in a separate thread
+    let (render_tx, render_rx) = mpsc::channel();
+    let render_handle = thread::spawn(move || {
+        let mut last_frame = frame::new_frame();
+        let mut stdout = io::stdout();
+        render::render(&mut stdout, &last_frame, &last_frame, true);
+        loop {
+            let curr_frame = match render_rx.recv() {
+                Ok(x) => x,
+                Err(_) => break,
+            };
+            render::render(&mut stdout, &last_frame, &curr_frame, false);
+            last_frame = curr_frame;
+        }
+    });
+
     // Game Loop
     'gameloop: loop { // label the loop w the name gameloop
+        //Per-frame initialization
+        let curr_frame = new_frame();
         // Input
         while event::poll(Duration::default())? {
             // poll for input events with a default duration of 0
@@ -51,9 +75,14 @@ fn main() -> Result <(), Box<dyn Error>> {
                 }
             }
         }
+        // Draw & render
+        let _ = render_tx.send(curr_frame);
+        thread::sleep(Duration::from_millis(1));
     }
-    
+
     // Cleanup
+    drop(render_tx);
+    render_handle.join().unwrap();
 
     /* sounds */
     // audio.wait();

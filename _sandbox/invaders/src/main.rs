@@ -10,6 +10,7 @@ use crossterm::cursor::{Show, Hide};
 use crossterm::event::{self, Event, KeyCode};
 
 use std::time::Duration;
+use std::time::Instant;
 
 use invaders::frame;
 use invaders::frame::{new_frame, Drawable};
@@ -56,8 +57,14 @@ fn main() -> Result <(), Box<dyn Error>> {
 
     // Game Loop
     let mut player = Player::new();
+    
+    let mut instant = Instant::now();
+
     'gameloop: loop { // label the loop w the name gameloop
         //Per-frame initialization
+        let delta = instant.elapsed(); // Returns the amount of time elapsed since this instant was created.
+        instant = Instant::now(); // refresh the value of instant.
+
         let mut curr_frame = new_frame();
         // Input
         while event::poll(Duration::default())? {
@@ -67,6 +74,17 @@ fn main() -> Result <(), Box<dyn Error>> {
                 // what sort of events are we interested in?
                 match key_event.code {
                     // keyboard events
+                    KeyCode::Enter | KeyCode::Char(' ') => {
+                        // bind keyboard keys to the shooting action
+                        if player.shoot() {
+                            // player.shoot returns a boolean
+                            // it returns a boolean because 
+                            // we want to play the "pew" sound
+                            // the return boolean has no other role
+
+                            // audio.play("pew");
+                        }
+                    },
                     KeyCode::Left | KeyCode::Char('a') => {
                         // bind keyboard keys to player's movement to left
                         player.move_left();
@@ -86,6 +104,10 @@ fn main() -> Result <(), Box<dyn Error>> {
                 }
             }
         }
+
+        // Updates
+        player.update(delta); // pass the delta into player.update, which will then update the status of the shots
+
         // Draw & render
         player.draw(&mut curr_frame); // draw the Player
         let _ = render_tx.send(curr_frame);

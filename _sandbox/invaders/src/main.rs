@@ -12,8 +12,10 @@ use crossterm::event::{self, Event, KeyCode};
 use std::time::Duration;
 
 use invaders::frame;
-use invaders::frame::new_frame;
+use invaders::frame::{new_frame, Drawable};
 use invaders::render;
+
+use invaders::player::Player;
 
 fn main() -> Result <(), Box<dyn Error>> {
     /* sounds */
@@ -53,9 +55,10 @@ fn main() -> Result <(), Box<dyn Error>> {
     });
 
     // Game Loop
+    let mut player = Player::new();
     'gameloop: loop { // label the loop w the name gameloop
         //Per-frame initialization
-        let curr_frame = new_frame();
+        let mut curr_frame = new_frame();
         // Input
         while event::poll(Duration::default())? {
             // poll for input events with a default duration of 0
@@ -64,6 +67,14 @@ fn main() -> Result <(), Box<dyn Error>> {
                 // what sort of events are we interested in?
                 match key_event.code {
                     // keyboard events
+                    KeyCode::Left | KeyCode::Char('a') => {
+                        // bind keyboard keys to player's movement to left
+                        player.move_left();
+                    },
+                    KeyCode::Right | KeyCode::Char('d') => {
+                        // bind keyboard keys to player's movement to right
+                        player.move_right();
+                    },
                     KeyCode::Esc | KeyCode::Char('q') => {
                         // specifically Esc key and q key
                         // audio.play("lose");
@@ -76,6 +87,7 @@ fn main() -> Result <(), Box<dyn Error>> {
             }
         }
         // Draw & render
+        player.draw(&mut curr_frame); // draw the Player
         let _ = render_tx.send(curr_frame);
         thread::sleep(Duration::from_millis(1));
     }

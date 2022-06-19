@@ -17,7 +17,6 @@ use invaders::frame::{new_frame, Drawable};
 use invaders::render;
 
 use invaders::player::Player;
-use invaders::invaders::Invaders;
 
 fn main() -> Result <(), Box<dyn Error>> {
     /* sounds */
@@ -60,8 +59,6 @@ fn main() -> Result <(), Box<dyn Error>> {
     let mut player = Player::new();
     
     let mut instant = Instant::now();
-
-    let mut invaders = Invaders::new();
 
     'gameloop: loop { // label the loop w the name gameloop
         //Per-frame initialization
@@ -109,43 +106,12 @@ fn main() -> Result <(), Box<dyn Error>> {
         }
 
         // Updates
-        // updates here basically updates .. afaics, 1 thing:
-        // - graphics, ie, movement of the invaders, shots, player
         player.update(delta); // pass the delta into player.update, which will then update the status of the shots
-        if invaders.update(delta) {
-            // audio.play("move"); 
-        }
-        if player.detect_hits(&mut invaders) {
-            // audio.play("explode");
-        }
 
         // Draw & render
-
-        // player.draw(&mut curr_frame); // draw the Player
-        // invaders.draw(&mut curr_frame); // draw the Invaders
-        // player.draw and invaders.draw works but Nathan wants to use Generics so lets go w it (see below)
-        let drawables: Vec<&dyn Drawable> = vec![&player, &invaders];
-        for drawable in drawables {
-            drawable.draw(&mut curr_frame);
-        }
-
+        player.draw(&mut curr_frame); // draw the Player
         let _ = render_tx.send(curr_frame);
         thread::sleep(Duration::from_millis(1));
-
-        // win or lose
-        if invaders.all_killed() {
-            // audio.play("win");
-            println!("you win");
-            thread::sleep(Duration::from_millis(5000));
-            break 'gameloop;
-        }
-
-        if invaders.reached_bottom() {
-            // audio.play("lose");
-            println!("you lose");
-            thread::sleep(Duration::from_millis(5000));
-            break 'gameloop;
-        }
     }
 
     // Cleanup

@@ -5,8 +5,6 @@ use crate::shot::Shot;
 
 use std::time::Duration;
 
-use crate::invaders::Invaders;
-
 pub struct Player {
     // defines the properties of Player
     x: usize,
@@ -56,23 +54,6 @@ pub struct Player {
             shot.update(delta); // and update the timer
         }
         self.shots.retain(|shot| !shot.dead()); // retain the shots (which aren't dead) in vector
-    }
-    pub fn detect_hits(&mut self, invaders: &mut Invaders) -> bool {
-        // this fn is basically called by main.rs only to ... play audio
-        let mut hit_something = false; // we begin w nothing's been hit
-        for shot in self.shots.iter_mut() {
-            // we check through our shots
-            if !shot.exploding {
-                // if any of the shot is not exploding
-                if invaders.kill_invader_at(shot.x, shot.y) {
-                    // apply the location of the shot to the location of the invader in invaders
-                    // and if we get a true
-                    hit_something = true; // then we've hit an invader w our shot
-                    shot.exploding; // and we set the shot.exploding to be true
-                }
-            }
-        }
-        hit_something // this will return to main.rs
     }
  }
 

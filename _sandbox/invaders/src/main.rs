@@ -1,5 +1,4 @@
 use std::error::Error;
-// use rusty_audio::Audio; /* sounds */
 use std::io;
 use std::sync::mpsc;
 use std::thread;
@@ -19,8 +18,23 @@ use invaders::render;
 use invaders::player::Player;
 use invaders::invaders::Invaders;
 
+use rusty_audio::Audio; /* sounds */
+use std::path::Path;
+const AUDIO_PATH: &str = "./sounds/";
+
 fn main() -> Result <(), Box<dyn Error>> {
     /* sounds */
+    let audio_path = Path::new(AUDIO_PATH);
+    let mut audio = Audio::new();
+
+    for af in audio_path.read_dir().expect("") {
+        if let Ok(af) = af {
+            let full_audio_path = af.path();
+            let audio_name = full_audio_path.file_stem().unwrap().to_str().unwrap();
+            // println!("{:?}, {:?}", audio_name, full_audio_path);
+            audio.add(audio_name, &full_audio_path);
+        }
+    }
     // let mut audio = Audio::new();
     // audio.add("explode", "./sounds/explode.wav");
     // audio.add("lose", "./sounds/lose.wav");
@@ -28,7 +42,8 @@ fn main() -> Result <(), Box<dyn Error>> {
     // audio.add("pew", "./sounds/pew.wav");
     // audio.add("startup", "./sounds/startup.wav");
     // audio.add("win", "./sounds/win.wav");
-    // audio.play("startup");
+    thread::sleep(Duration::from_millis(5000));
+    audio.play("startup");
 
     // Terminal
     let mut stdout = io::stdout();
@@ -85,7 +100,7 @@ fn main() -> Result <(), Box<dyn Error>> {
                             // we want to play the "pew" sound
                             // the return boolean has no other role
 
-                            // audio.play("pew");
+                            audio.play("pew");
                         }
                     },
                     KeyCode::Left | KeyCode::Char('a') => {
@@ -98,7 +113,7 @@ fn main() -> Result <(), Box<dyn Error>> {
                     },
                     KeyCode::Esc | KeyCode::Char('q') => {
                         // specifically Esc key and q key
-                        // audio.play("lose");
+                        audio.play("lose");
                         break 'gameloop; // break out of the game loop
                     },
                     _ => {
@@ -113,10 +128,10 @@ fn main() -> Result <(), Box<dyn Error>> {
         // - graphics, ie, movement of the invaders, shots, player
         player.update(delta); // pass the delta into player.update, which will then update the status of the shots
         if invaders.update(delta) {
-            // audio.play("move"); 
+            audio.play("move"); 
         }
         if player.detect_hits(&mut invaders) {
-            // audio.play("explode");
+            audio.play("explode");
         }
 
         // Draw & render
@@ -134,14 +149,14 @@ fn main() -> Result <(), Box<dyn Error>> {
 
         // win or lose
         if invaders.all_killed() {
-            // audio.play("win");
+            audio.play("win");
             println!("you win");
             thread::sleep(Duration::from_millis(5000));
             break 'gameloop;
         }
 
         if invaders.reached_bottom() {
-            // audio.play("lose");
+            audio.play("lose");
             println!("you lose");
             thread::sleep(Duration::from_millis(5000));
             break 'gameloop;
@@ -153,7 +168,7 @@ fn main() -> Result <(), Box<dyn Error>> {
     render_handle.join().unwrap();
 
     /* sounds */
-    // audio.wait();
+    audio.wait();
     
     stdout.execute(Show)?; // show cursor
     stdout.execute(LeaveAlternateScreen)?; // leave alternate screen
